@@ -1,9 +1,9 @@
-name: E-mail diario - Biblioteca LDCM
+name: E-mail semanal - Biblioteca LDCM
 
 on:
   schedule:
-    # 10:00 Brasilia = 13:00 UTC
-    - cron: '0 13 * * *'
+    # Segunda-feira 10:00 Brasilia = 13:00 UTC
+    - cron: '0 13 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -26,17 +26,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install msal requests python-dotenv tenacity
-
-      - name: Processar inscricoes
-        run: python processar_inscricoes.py --executar
-
-      - name: Enviar e-mail diario
-        run: python main_diario.py --enviar
-
-      - name: Commit alteracoes
+      - run: python main_semanal.py --enviar
+      - name: Commit offset
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add offset.txt subscribers.txt
-          git diff --cached --quiet || git commit -m "Diario: offset $(cat offset.txt), $(wc -l < subscribers.txt) inscritos"
+          git add offset_semanal.txt
+          git diff --cached --quiet || git commit -m "Offset semanal: $(cat offset_semanal.txt)"
           git push

@@ -1,99 +1,110 @@
-"""Envia o e-mail de aviso da campanha gradual para todos@ldcm.com.br.
+"""E-mail de aviso + primeiro lote semanal (Gustavo Alo) — 06/04/2026.
 
 Uso:
-    python enviar_aviso.py              # envia imediatamente
-    python enviar_aviso.py --dry-run    # mostra HTML sem enviar
+    python enviar_aviso.py                # dry run, so para mim
+    python enviar_aviso.py --enviar       # envia so para mim
+    python enviar_aviso.py --enviar --todos  # envia para todos@ldcm.com.br
 """
 
 import os
 import sys
 
-import requests
 from dotenv import load_dotenv
+
+import auth
+import email_comum
 
 load_dotenv()
 
-import auth
-
-EMAIL_REMETENTE = os.getenv("EMAIL_REMETENTE", "rodrigo.moreira@ldcm.com.br")
-GRAPH_URL = "https://graph.microsoft.com/v1.0"
-
-# Logo base64
-_logo_path = os.path.join(os.path.dirname(__file__), "logo_base64.txt")
-with open(_logo_path, "r") as _f:
-    LOGO_DATA_URI = _f.read().strip()
+CRIADOR_GUSTAVO = "Gustavo Aló (GAA)"
 
 
-def montar_html() -> str:
+def montar_html(lote):
+    logo = email_comum.LOGO_DATA_URI
+    linhas = "\n".join(email_comum._linha_livro(livro) for livro in lote)
+    qtd = len(lote)
+
     return (
-        '<table width="100%" cellpadding="0" cellspacing="0" style="font-family: Calibri, Arial, sans-serif; background: #f4f3ef;">'
-        "<tr>"
-        '<td align="center" style="padding: 32px 16px 0;">'
-        '<table width="600" cellpadding="0" cellspacing="0" style="background:#fff; border-radius:2px; overflow:hidden;">'
-        "<tr>"
-        '<td style="background:#3D5549; padding:36px 40px 32px; text-align:center;">'
-        f'<img alt="LDCM Advogados" width="160" style="display:block;margin:0 auto;mix-blend-mode:screen;max-width:160px;" src="{LOGO_DATA_URI}">'
-        "</td>"
-        "</tr>"
-        "<tr>"
-        '<td style="padding:36px 40px; color:#2a2a2a; font-size:15px; line-height:1.7;">'
-        '<h2 style="color:#3D5549; border-bottom:2px solid #ADA688; padding-bottom:8px; margin-top:0;">Biblioteca LDCM &#8212; Aviso importante</h2>'
-        "<p>Prezados,</p>"
-        "<p>A biblioteca est&#225; passando por um processo de aperfei&#231;oamento que, dentre outras melhorias, incluir&#225; um aumento substancial do nosso acervo.</p>"
-        "<p>Para que n&#227;o recebam e-mails com uma lista impratic&#225;vel de inclus&#245;es, <strong>a partir de hoje voc&#234;s receber&#227;o, todo dia, um e-mail com a lista de parte dos t&#237;tulos que foram inclu&#237;dos</strong> a partir do dia 30.03.</p>"
-        "<p>Voc&#234;s receber&#227;o este e-mail at&#233; que todas as inclus&#245;es tenham sido informadas, o que pode demorar. A partir da&#237;, voltar&#227;o os avisos semanais.</p>"
-        "<p>O LDCM Advogados tem consci&#234;ncia da import&#226;ncia da biblioteca para o nosso fluxo de trabalho, n&#227;o apenas para pesquisas para a atua&#231;&#227;o em casos, mas tamb&#233;m para auxiliar nos estudos e trabalhos acad&#234;micos da equipe.</p>"
-        "<p>O primeiro e-mail ser&#225; enviado na sequ&#234;ncia.</p>"
-        "<p>Obrigado.</p>"
-        '<p style="margin-top:24px; margin-bottom:0; color:#3D5549; font-weight:600;">Comit&#234; de TI e Biblioteca</p>'
-        '<p style="margin-top:2px; color:#77787B; font-size:13px;">LDCM Advogados</p>'
-        "</td>"
-        "</tr>"
-        "<tr>"
-        '<td style="background:#3D5549; padding:20px 40px; text-align:center;">'
-        '<span style="font-family:Arial,sans-serif; font-size:10px; color:#ADA688; letter-spacing:0.15em;">'
-        "S&#195;O PAULO | RIO DE JANEIRO | LDCM.COM.BR"
-        "</span>"
-        "</td>"
-        "</tr>"
-        "</table>"
-        "</td>"
-        "</tr>"
-        "</table>"
+        '<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Calibri,Arial,sans-serif;background:#f4f3ef;">'
+        '<tr><td align="center" style="padding:32px 16px 0;">'
+        '<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:2px;overflow:hidden;">'
+        '<tr><td style="background:#3D5549;padding:36px 40px 32px;text-align:center;">'
+        f'<img alt="LDCM Advogados" width="160" style="display:block;margin:0 auto;mix-blend-mode:screen;max-width:160px;" src="{logo}">'
+        '</td></tr>'
+        '<tr><td style="padding:36px 40px;color:#2a2a2a;font-size:15px;line-height:1.7;">'
+        '<h2 style="color:#3D5549;border-bottom:2px solid #ADA688;padding-bottom:8px;margin-top:0;">Biblioteca LDCM &#8212; Aviso importante</h2>'
+        '<p>Prezados,</p>'
+        '<p>A biblioteca est&#225; passando por um processo de aperfei&#231;oamento que, dentre outras melhorias, incluir&#225; um aumento substancial do nosso acervo.</p>'
+        '<p>A partir de agora, <strong>toda segunda-feira</strong> voc&#234;s receber&#227;o um e-mail com os novos t&#237;tulos inclu&#237;dos pela equipe na semana.</p>'
+        f'<p>Abaixo est&#227;o os primeiros <strong>{qtd} t&#237;tulos</strong> adicionados desde 30.03:</p>'
+        '<table style="border-collapse:collapse;width:100%;font-size:13px;">'
+        '<tbody>'
+        '<tr style="background-color:#3D5549;color:#ffffff;">'
+        f'<th style="{email_comum.TH_STYLE}">T&#237;tulo</th>'
+        f'<th style="{email_comum.TH_STYLE}">Autores</th>'
+        f'<th style="{email_comum.TH_STYLE}">Editora</th>'
+        f'<th style="{email_comum.TH_STYLE}">Ano</th>'
+        f'<th style="{email_comum.TH_STYLE}">Link</th>'
+        '</tr>'
+        f'{linhas}'
+        '</tbody>'
+        '</table>'
+        '<div style="margin-top:28px;padding:20px;background:#f4f3ef;border-radius:4px;">'
+        '<p style="margin:0 0 8px;color:#2a2a2a;font-size:14px;line-height:1.6;font-weight:600;">E-mail di&#225;rio (opcional)</p>'
+        '<p style="margin:0 0 12px;color:#2a2a2a;font-size:14px;line-height:1.6;">'
+        'Al&#233;m das inclus&#245;es da equipe, <strong>milhares de novos t&#237;tulos</strong> est&#227;o sendo catalogados '
+        'automaticamente no acervo. Muitos s&#227;o de autores estrangeiros e alguns s&#227;o antigos. '
+        'Se quiser, voc&#234; pode receber um <strong>e-mail di&#225;rio</strong> com essas inclus&#245;es enquanto a campanha durar.</p>'
+        f'<a href="{email_comum.MAILTO_INSCREVER}" style="{email_comum.BTN_STYLE}background:#3D5549;color:#ffffff;">'
+        'Quero receber o e-mail di&#225;rio</a>'
+        '</div>'
+        '<p>Obrigado.</p>'
+        '<p style="margin-top:24px;margin-bottom:0;color:#3D5549;font-weight:600;">Comit&#234; de TI e Biblioteca</p>'
+        '<p style="margin-top:2px;color:#77787B;font-size:13px;">LDCM Advogados</p>'
+        '</td></tr>'
+        '<tr><td style="background:#3D5549;padding:20px 40px;text-align:center;">'
+        '<span style="font-family:Arial,sans-serif;font-size:10px;color:#ADA688;letter-spacing:0.15em;">'
+        'S&#195;O PAULO | RIO DE JANEIRO | LDCM.COM.BR'
+        '</span>'
+        '</td></tr>'
+        '</table>'
+        '</td></tr>'
+        '</table>'
     )
 
 
-def enviar():
+def enviar(dry_run=True, destinatario="rodrigo.moreira@ldcm.com.br"):
     token = auth.get_token()
-    html = montar_html()
 
-    url = f"{GRAPH_URL}/users/{EMAIL_REMETENTE}/sendMail"
-    body = {
-        "message": {
-            "subject": "Biblioteca LDCM \u2014 Aviso importante sobre atualiza\u00e7\u00f5es do acervo",
-            "body": {"contentType": "HTML", "content": html},
-            "from": {"emailAddress": {"address": "TI.biblioteca@ldcm.com.br"}},
-            "toRecipients": [
-                {"emailAddress": {"address": "todos@ldcm.com.br"}}
-            ],
-        },
-        "saveToSentItems": True,
-    }
+    livros = email_comum.buscar_livros(token, criador=CRIADOR_GUSTAVO)
+    print(f"Livros do Gustavo desde {email_comum.DATA_CORTE}: {len(livros)}")
 
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
-    resp = requests.post(url, headers=headers, json=body, timeout=60)
-    if not resp.ok:
-        print(f"ERRO: {resp.status_code} - {resp.text[:500]}")
-        sys.exit(1)
-    print("E-mail de aviso enviado com sucesso para todos@ldcm.com.br!")
+    lote = livros[:100]
+    html = montar_html(lote)
+
+    if dry_run:
+        os.makedirs("logs", exist_ok=True)
+        with open("logs/aviso_dry.html", "w", encoding="utf-8") as f:
+            f.write(html)
+        print(f"DRY RUN -- HTML salvo em logs/aviso_dry.html ({len(html)} chars)")
+        return
+
+    email_comum.enviar_email(
+        token,
+        [destinatario],
+        "Biblioteca LDCM \u2014 Aviso importante sobre atualiza\u00e7\u00f5es do acervo",
+        html,
+    )
+    print(f"E-mail enviado para {destinatario}")
+
+    # Salvar offset semanal
+    offset_path = os.path.join(os.path.dirname(__file__), "offset_semanal.txt")
+    with open(offset_path, "w") as f:
+        f.write(str(len(lote)))
+    print(f"Offset semanal salvo: {len(lote)}")
 
 
 if __name__ == "__main__":
-    if "--dry-run" in sys.argv:
-        print(montar_html())
-    else:
-        enviar()
+    is_enviar = "--enviar" in sys.argv
+    dest = "todos@ldcm.com.br" if "--todos" in sys.argv else "rodrigo.moreira@ldcm.com.br"
+    enviar(dry_run=not is_enviar, destinatario=dest)
