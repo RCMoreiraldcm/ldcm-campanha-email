@@ -1,0 +1,7 @@
+msal>=1.26
+requests>=2.31
+tenacity>=8.2
+python-dotenv>=1.0
+tqdm>=4.66
+pymupdf>=1.23
+ocrmypdf>=16.0
