@@ -9,6 +9,15 @@ on:
 jobs:
   enviar:
     runs-on: ubuntu-latest
+    env:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      SP_SITE_ID: ${{ secrets.SP_SITE_ID }}
+      SP_LIST_ID: ${{ secrets.SP_LIST_ID }}
+      EMAIL_REMETENTE: ${{ secrets.EMAIL_REMETENTE }}
+      EMAIL_DESTINATARIOS: ${{ secrets.EMAIL_DESTINATARIOS }}
+      DATA_CORTE: ${{ secrets.DATA_CORTE }}
     steps:
       - uses: actions/checkout@v4
 
@@ -18,19 +27,6 @@ jobs:
 
       - name: Instalar dependências
         run: pip install msal requests python-dotenv tenacity
-
-      - name: Criar .env a partir dos secrets
-        run: |
-          cat > .env << 'ENVEOF'
-          AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
-          SP_SITE_ID=${{ secrets.SP_SITE_ID }}
-          SP_LIST_ID=${{ secrets.SP_LIST_ID }}
-          EMAIL_REMETENTE=${{ secrets.EMAIL_REMETENTE }}
-          EMAIL_DESTINATARIOS=${{ secrets.EMAIL_DESTINATARIOS }}
-          DATA_CORTE=${{ secrets.DATA_CORTE }}
-          ENVEOF
 
       - name: Executar campanha
         run: python main_campanha.py --enviar
