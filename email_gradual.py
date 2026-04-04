@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 from datetime import datetime
 
 import requests
@@ -43,11 +44,31 @@ def _headers(token: str, extra: dict | None = None) -> dict:
     return h
 
 
+def _limpar_autor(html: str) -> str:
+    """Extrai texto limpo de HTML do campo Autor/autores do SharePoint.
+
+    Converte <div>, <p>, <br> em separadores e remove todas as tags.
+    Ex: '<div class="...">Orlando Gomes<p>Antunes Varela</p></div>'
+        -> 'Orlando Gomes; Antunes Varela'
+    """
+    if not html:
+        return ""
+    # Substituir tags de bloco por separador
+    texto = re.sub(r'</?(div|p|br)\b[^>]*/?>', '\n', html, flags=re.IGNORECASE)
+    # Remover qualquer tag restante
+    texto = re.sub(r'<[^>]+>', '', texto)
+    # Decode HTML entities
+    texto = texto.replace('&#58;', ':').replace('&amp;', '&')
+    # Limpar linhas e juntar com "; "
+    partes = [p.strip() for p in texto.split('\n') if p.strip()]
+    return '; '.join(partes)
+
+
 def buscar_livros_campanha(token: str) -> list[dict]:
     """Retorna todos os livros Created >= DATA_CORTE, ordenados por número."""
     url = f"{GRAPH_URL}/sites/{SP_SITE_ID}/lists/{SP_LIST_ID}/items"
     campos = (
-        "Id,_x0023_,Title,Autor_x002f_autores,Editora,"
+        "Id,_x0023_,Title,Autor_x002f_autores,Autores_email,Editora,"
         "Anodepublica_x00e7__x00e3_o,Link,Created"
     )
     params = {
@@ -94,10 +115,16 @@ def buscar_livros_campanha(token: str) -> list[dict]:
         ano_raw = fields.get("Anodepublica_x00e7__x00e3_o", "")
         ano = str(int(ano_raw)) if ano_raw else ""
 
+        # Autores_email (formatado pelo Power Automate) tem prioridade;
+        # fallback: limpar HTML do campo Autor/autores
+        autor = fields.get("Autores_email", "") or ""
+        if not autor.strip():
+            autor = _limpar_autor(fields.get("Autor_x002f_autores", ""))
+
         livros.append({
             "NumeroLista": int(fields.get("_x0023_", 0)),
             "Title": fields.get("Title", ""),
-            "Autor": fields.get("Autor_x002f_autores", ""),
+            "Autor": autor,
             "Editora": fields.get("Editora", ""),
             "Ano": ano,
             "Link": link_url,
