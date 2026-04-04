@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 import auth
-import sharepoint
 
 load_dotenv()
 
