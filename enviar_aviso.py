@@ -55,7 +55,7 @@ def montar_html(lote):
         'Al&#233;m das inclus&#245;es da equipe, <strong>milhares de novos t&#237;tulos</strong> est&#227;o sendo catalogados '
         'automaticamente no acervo. Muitos s&#227;o de autores estrangeiros e alguns s&#227;o antigos. '
         'Se quiser, voc&#234; pode receber um <strong>e-mail di&#225;rio</strong> com essas inclus&#245;es enquanto a campanha durar.</p>'
-        f'<a href="{email_comum.MAILTO_INSCREVER}" style="{email_comum.BTN_STYLE}background:#3D5549;color:#ffffff;">'
+        f'<a href="{email_comum.URL_INSCREVER}" style="{email_comum.BTN_STYLE}background:#3D5549;color:#ffffff;">'
         'Quero receber o e-mail di&#225;rio</a>'
         '</div>'
         '<p>Obrigado.</p>'

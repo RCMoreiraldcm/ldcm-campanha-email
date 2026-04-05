@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inscrever — Biblioteca LDCM</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.card { background: #fff; border-radius: 4px; overflow: hidden; width: 480px; max-width: 94vw; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+.header { background: #3D5549; padding: 32px 40px; text-align: center; }
+.header h1 { color: #fff; font-size: 18px; font-weight: 600; letter-spacing: .04em; }
+.body { padding: 40px; text-align: center; }
+.body p { color: #2a2a2a; font-size: 15px; line-height: 1.7; margin-bottom: 16px; }
+.spinner { display: inline-block; width: 36px; height: 36px; border: 3px solid #ADA688; border-top-color: #3D5549; border-radius: 50%; animation: spin .8s linear infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.icon { font-size: 48px; margin-bottom: 12px; }
+.success { color: #3D5549; }
+.error { color: #c0392b; }
+.already { color: #ADA688; }
+.footer { background: #3D5549; padding: 16px 40px; text-align: center; }
+.footer span { font-size: 10px; color: #ADA688; letter-spacing: .15em; }
+.detail { font-size: 13px; color: #77787B; }
+</style>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+</head>
+<body>
+<div class="card">
+  <div class="header"><h1>Biblioteca LDCM</h1></div>
+  <div class="body" id="content">
+    <div class="spinner"></div>
+    <p>Autenticando...</p>
+  </div>
+  <div class="footer"><span>S&#195;O PAULO | RIO DE JANEIRO | LDCM.COM.BR</span></div>
+</div>
+
+<script>
+(function() {
+  var SITE_ID = 'ldcm.sharepoint.com,e3e9b8a6-c2d7-400e-a300-0cd410841b87,82545105-2114-4aec-b463-c9d965a45203';
+  var LIST_ID = 'f1d72efe-8389-4caf-9b09-27c2e527fc51';
+  var GRAPH = 'https://graph.microsoft.com/v1.0';
+  var el = document.getElementById('content');
+
+  var msalConfig = {
+    auth: {
+      clientId: '8fbd82e4-9752-4857-b362-dfee8262926c',
+      authority: 'https://login.microsoftonline.com/5f7cfa20-6079-43f2-ba24-cd12c2d6d450',
+      redirectUri: window.location.origin + window.location.pathname
+    },
+    cache: { cacheLocation: 'sessionStorage' }
+  };
+
+  var scopes = ['User.Read', 'Sites.ReadWrite.All'];
+  var pca = new msal.PublicClientApplication(msalConfig);
+
+  function show(icon, cls, msg, detail) {
+    el.innerHTML = '<div class="icon ' + cls + '">' + icon + '</div>' +
+      '<p class="' + cls + '">' + msg + '</p>' +
+      (detail ? '<p class="detail">' + detail + '</p>' : '');
+  }
+
+  function graphHeaders(token) {
+    return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+  }
+
+  async function getToken() {
+    // Handle redirect response first
+    var resp = await pca.handleRedirectPromise();
+    if (resp) return resp.accessToken;
+
+    var accounts = pca.getAllAccounts();
+    if (accounts.length > 0) {
+      try {
+        var silent = await pca.acquireTokenSilent({ scopes: scopes, account: accounts[0] });
+        return silent.accessToken;
+      } catch (e) { /* fall through to redirect */ }
+    }
+    // Redirect to login
+    await pca.acquireTokenRedirect({ scopes: scopes });
+    return null; // page will redirect
+  }
+
+  async function run() {
+    try {
+      var token = await getToken();
+      if (!token) return; // redirecting to login
+
+      el.innerHTML = '<div class="spinner"></div><p>Processando sua inscri&#231;&#227;o...</p>';
+
+      // Get current user email
+      var meResp = await fetch(GRAPH + '/me', { headers: graphHeaders(token) });
+      var me = await meResp.json();
+      var email = me.mail || me.userPrincipalName;
+      var name = me.displayName;
+
+      // Check if already subscribed
+      var checkUrl = GRAPH + '/sites/' + SITE_ID + '/lists/' + LIST_ID +
+        '/items?$filter=fields/Email eq \'' + email + '\'&$expand=fields($select=Email)';
+      var checkResp = await fetch(checkUrl, { headers: graphHeaders(token) });
+      var checkData = await checkResp.json();
+
+      if (checkData.value && checkData.value.length > 0) {
+        show('&#10003;', 'already', 'Voc&#234; j&#225; est&#225; inscrito!', email);
+        return;
+      }
+
+      // Subscribe
+      var addUrl = GRAPH + '/sites/' + SITE_ID + '/lists/' + LIST_ID + '/items';
+      var addResp = await fetch(addUrl, {
+        method: 'POST',
+        headers: graphHeaders(token),
+        body: JSON.stringify({ fields: { Title: name, Email: email } })
+      });
+
+      if (addResp.ok) {
+        show('&#10003;', 'success', 'Inscri&#231;&#227;o realizada com sucesso!',
+          'Voc&#234; receber&#225; o e-mail di&#225;rio da Biblioteca LDCM em ' + email);
+      } else {
+        var errText = await addResp.text();
+        throw new Error(errText);
+      }
+    } catch (err) {
+      show('&#10007;', 'error', 'Ocorreu um erro ao processar sua inscri&#231;&#227;o.',
+        'Tente novamente ou entre em contato com TI.biblioteca@ldcm.com.br');
+      console.error(err);
+    }
+  }
+
+  run();
+})();
+</script>
+</body>
+</html>

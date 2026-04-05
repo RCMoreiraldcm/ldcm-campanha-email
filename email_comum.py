@@ -148,19 +148,18 @@ def salvar_offset(valor: int) -> None:
 # ── Subscribers ────────────────────────────────────────────────────
 
 
-def ler_subscribers() -> list[str]:
-    path = os.path.join(os.path.dirname(__file__), "subscribers.txt")
-    if not os.path.exists(path):
-        return []
-    with open(path, "r") as f:
-        return [line.strip() for line in f if line.strip()]
-
-
-def salvar_subscribers(emails: list[str]) -> None:
-    path = os.path.join(os.path.dirname(__file__), "subscribers.txt")
-    with open(path, "w") as f:
-        for email in sorted(set(emails)):
-            f.write(email + "\n")
+def ler_subscribers(token: str) -> list[str]:
+    """Lê inscritos da lista SharePoint InscritosEmailDiario via Graph API."""
+    url = f"{GRAPH_URL}/sites/{SP_SITE_ID}/lists/{SP_LIST_ID_INSCRITOS}/items"
+    params = {"$expand": "fields($select=Email)", "$top": "999"}
+    resp = requests.get(url, headers=_headers(token), params=params, timeout=60)
+    resp.raise_for_status()
+    emails = []
+    for item in resp.json().get("value", []):
+        email = item.get("fields", {}).get("Email", "").strip()
+        if email:
+            emails.append(email)
+    return emails
 
 
 # ── HTML ───────────────────────────────────────────────────────────
@@ -194,16 +193,21 @@ TH_STYLE = (
     'letter-spacing:1px;text-transform:uppercase;font-size:11px'
 )
 
-MAILTO_INSCREVER = (
-    "mailto:rodrigo.moreira@ldcm.com.br"
-    "?subject=INSCREVER%20BIBLIOTECA%20DIARIO"
-    "&body=Quero%20receber%20o%20e-mail%20di%C3%A1rio%20da%20Biblioteca%20LDCM."
+SP_SITE_URL = os.getenv(
+    "SP_SITE_URL", "https://ldcm.sharepoint.com/sites/BibliotecaLDCM"
 )
 
-MAILTO_DESINSCREVER = (
-    "mailto:rodrigo.moreira@ldcm.com.br"
-    "?subject=DESINSCREVER%20BIBLIOTECA%20DIARIO"
-    "&body=Quero%20deixar%20de%20receber%20o%20e-mail%20di%C3%A1rio."
+URL_INSCREVER = (
+    f"{SP_SITE_URL}/Documentos%20Partilhados/inscrever.html"
+)
+
+URL_DESINSCREVER = (
+    f"{SP_SITE_URL}/Documentos%20Partilhados/desinscrever.html"
+)
+
+# Lista de inscritos no SharePoint
+SP_LIST_ID_INSCRITOS = os.getenv(
+    "SP_LIST_ID_INSCRITOS", "f1d72efe-8389-4caf-9b09-27c2e527fc51"
 )
 
 BTN_STYLE = (

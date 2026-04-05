@@ -30,16 +30,16 @@ def executar(dry_run: bool = True):
     logger.info("E-mail diario -- livros automaticos")
     logger.info("=" * 60)
 
-    # Verificar subscribers
-    subscribers = email_comum.ler_subscribers()
+    token = auth.get_token()
+    logger.info("Autenticacao OK")
+
+    # Verificar subscribers (lista SharePoint)
+    subscribers = email_comum.ler_subscribers(token)
     if not subscribers:
         logger.info("Nenhum inscrito. Nada a enviar.")
         return
 
     logger.info("Inscritos: %d (%s)", len(subscribers), ", ".join(subscribers))
-
-    token = auth.get_token()
-    logger.info("Autenticacao OK")
 
     livros = email_comum.buscar_livros(token, criador=CRIADOR)
     logger.info("Livros automaticos desde %s: %d", email_comum.DATA_CORTE, len(livros))
@@ -61,7 +61,7 @@ def executar(dry_run: bool = True):
     # Botao para desinscrever
     botao = (
         '<div style="margin-top:24px;text-align:center;">'
-        f'<a href="{email_comum.MAILTO_DESINSCREVER}" style="{email_comum.BTN_STYLE}background:transparent;color:#3D5549;border:1.5px solid #3D5549;">'
+        f'<a href="{email_comum.URL_DESINSCREVER}" style="{email_comum.BTN_STYLE}background:transparent;color:#3D5549;border:1.5px solid #3D5549;">'
         'Quero deixar de receber este e-mail</a>'
         '</div>'
     )

@@ -61,7 +61,7 @@ def executar(dry_run: bool = True):
         'Al&#233;m destes, <strong>milhares de novos t&#237;tulos</strong> est&#227;o sendo adicionados automaticamente ao acervo '
         '(muitos de autores estrangeiros e alguns antigos). '
         'Se quiser, voc&#234; pode receber um e-mail di&#225;rio com essas inclus&#245;es:</p>'
-        f'<a href="{email_comum.MAILTO_INSCREVER}" style="{email_comum.BTN_STYLE}background:#3D5549;color:#ffffff;">Quero receber o e-mail di&#225;rio</a>'
+        f'<a href="{email_comum.URL_INSCREVER}" style="{email_comum.BTN_STYLE}background:#3D5549;color:#ffffff;">Quero receber o e-mail di&#225;rio</a>'
         '</div>'
     )
 
