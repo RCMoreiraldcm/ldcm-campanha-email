@@ -92,20 +92,24 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
       var me = await meResp.json();
       var email = me.mail || me.userPrincipalName;
 
-      // Find the item
+      // Find the item (fetch all, filter client-side)
       var checkUrl = GRAPH + '/sites/' + SITE_ID + '/lists/' + LIST_ID +
-        "/items?$filter=fields/Email eq '" + email + "'&$expand=fields($select=Email)";
+        '/items?$expand=fields($select=Email)&$top=999';
       var checkResp = await fetch(checkUrl, { headers: graphHeaders(token) });
       var checkData = await checkResp.json();
+      var items = (checkData.value || []);
+      var found = items.find(function(item) {
+        return (item.fields || {}).Email && item.fields.Email.toLowerCase() === email.toLowerCase();
+      });
 
-      if (!checkData.value || checkData.value.length === 0) {
+      if (!found) {
         show('&#8212;', 'notfound', 'Voc&#234; n&#227;o estava inscrito.',
           'Nenhuma a&#231;&#227;o necess&#225;ria.');
         return;
       }
 
       // Delete the item
-      var itemId = checkData.value[0].id;
+      var itemId = found.id;
       var delUrl = GRAPH + '/sites/' + SITE_ID + '/lists/' + LIST_ID + '/items/' + itemId;
       var delResp = await fetch(delUrl, {
         method: 'DELETE',
