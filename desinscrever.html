@@ -22,7 +22,7 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
 .footer span { font-size: 10px; color: #ADA688; letter-spacing: .15em; }
 .detail { font-size: 13px; color: #77787B; }
 </style>
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.27.0/lib/msal-browser.min.js"></script>
 </head>
 <body>
 <div class="card">
@@ -64,7 +64,8 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
 
   async function run() {
     try {
-      var pca = await msal.createPublicClientApplication(msalConfig);
+      var pca = new msal.PublicClientApplication(msalConfig);
+      await pca.initialize();
 
       var redirectResp = await pca.handleRedirectPromise();
       var token = null;
