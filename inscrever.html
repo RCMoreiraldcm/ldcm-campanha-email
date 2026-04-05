@@ -50,8 +50,7 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
     cache: { cacheLocation: 'sessionStorage' }
   };
 
-  var scopes = ['User.Read', 'Sites.ReadWrite.All'];
-  var pca = new msal.PublicClientApplication(msalConfig);
+  var scopes = ['User.Read', 'Sites.Manage.All'];
 
   function show(icon, cls, msg, detail) {
     el.innerHTML = '<div class="icon ' + cls + '">' + icon + '</div>' +
@@ -63,27 +62,33 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
     return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
   }
 
-  async function getToken() {
-    // Handle redirect response first
-    var resp = await pca.handleRedirectPromise();
-    if (resp) return resp.accessToken;
-
-    var accounts = pca.getAllAccounts();
-    if (accounts.length > 0) {
-      try {
-        var silent = await pca.acquireTokenSilent({ scopes: scopes, account: accounts[0] });
-        return silent.accessToken;
-      } catch (e) { /* fall through to redirect */ }
-    }
-    // Redirect to login
-    await pca.acquireTokenRedirect({ scopes: scopes });
-    return null; // page will redirect
-  }
-
   async function run() {
     try {
-      var token = await getToken();
-      if (!token) return; // redirecting to login
+      var pca = await msal.createPublicClientApplication(msalConfig);
+
+      // Handle redirect return (if coming back from login)
+      var redirectResp = await pca.handleRedirectPromise();
+      var token = null;
+
+      if (redirectResp) {
+        token = redirectResp.accessToken;
+      } else {
+        // Try silent first
+        var accounts = pca.getAllAccounts();
+        if (accounts.length > 0) {
+          try {
+            var silent = await pca.acquireTokenSilent({ scopes: scopes, account: accounts[0] });
+            token = silent.accessToken;
+          } catch (e) {
+            // Silent failed, try popup
+          }
+        }
+        // If no token yet, use popup
+        if (!token) {
+          var popup = await pca.acquireTokenPopup({ scopes: scopes });
+          token = popup.accessToken;
+        }
+      }
 
       el.innerHTML = '<div class="spinner"></div><p>Processando sua inscri&#231;&#227;o...</p>';
 
@@ -95,7 +100,7 @@ body { font-family: Calibri, Arial, sans-serif; background: #f4f3ef; min-height:
 
       // Check if already subscribed
       var checkUrl = GRAPH + '/sites/' + SITE_ID + '/lists/' + LIST_ID +
-        '/items?$filter=fields/Email eq \'' + email + '\'&$expand=fields($select=Email)';
+        "/items?$filter=fields/Email eq '" + email + "'&$expand=fields($select=Email)";
       var checkResp = await fetch(checkUrl, { headers: graphHeaders(token) });
       var checkData = await checkResp.json();
 
