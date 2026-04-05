@@ -193,17 +193,14 @@ TH_STYLE = (
     'letter-spacing:1px;text-transform:uppercase;font-size:11px'
 )
 
-SP_SITE_URL = os.getenv(
-    "SP_SITE_URL", "https://ldcm.sharepoint.com/sites/BibliotecaLDCM"
+PAGES_BASE_URL = os.getenv(
+    "PAGES_BASE_URL",
+    "https://rcmoreiraldcm.github.io/ldcm-campanha-email",
 )
 
-URL_INSCREVER = (
-    f"{SP_SITE_URL}/Documentos%20Partilhados/inscrever.html"
-)
+URL_INSCREVER = f"{PAGES_BASE_URL}/inscrever.html"
 
-URL_DESINSCREVER = (
-    f"{SP_SITE_URL}/Documentos%20Partilhados/desinscrever.html"
-)
+URL_DESINSCREVER = f"{PAGES_BASE_URL}/desinscrever.html"
 
 # Lista de inscritos no SharePoint
 SP_LIST_ID_INSCRITOS = os.getenv(
