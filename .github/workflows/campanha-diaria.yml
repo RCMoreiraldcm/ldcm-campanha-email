@@ -2,8 +2,10 @@ name: E-mail diario - Biblioteca LDCM
 
 on:
   schedule:
-    # 10:00 Brasilia = 13:00 UTC
+    # 10:00 Brasilia = 13:00 UTC (lote do dia + inscritos existentes)
     - cron: '0 13 * * *'
+    # 12h, 14h, 16h, 18h Brasilia — envia para novos inscritos do dia
+    - cron: '0 15,17,19,21 * * *'
   workflow_dispatch:
 
 permissions:
@@ -27,9 +29,6 @@ jobs:
           python-version: '3.12'
       - run: pip install msal requests python-dotenv tenacity
 
-      - name: Processar inscricoes
-        run: python processar_inscricoes.py --executar
-
       - name: Enviar e-mail diario
         run: python main_diario.py --enviar
 
@@ -37,6 +36,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add offset.txt subscribers.txt
-          git diff --cached --quiet || git commit -m "Diario: offset $(cat offset.txt), $(wc -l < subscribers.txt) inscritos"
+          git add offset.txt sent_today.json
+          git diff --cached --quiet || git commit -m "Diario: offset $(cat offset.txt)"
           git push
